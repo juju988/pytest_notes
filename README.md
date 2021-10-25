@@ -5,7 +5,8 @@ Command | Result
 ------------ | -------------
 `pytest -x` | exit after first failed test
 `pytest -x --pdb` | auto-start debugger at first failure point
-`pytest -k pattern` | run all tests matching pattern e.g. `pytest -k equality` would run all tests which have 'equality' in their name 	
+`pytest -k pattern` | run all tests matching pattern e.g. `pytest -k equality` would run all tests which have 'equality' in their name, `pytest -k 'equality and not fail'` would run tests that have 'equality' but not 'fail' in their name. `and`, `not` and `or` are allowed keywords, and parentheses are allowed for grouping.
+`pytest -v` | instead of greed dots or red F, output the name of the test and PASSED/FAILED. `-vv` gives even more info.
 `pytest --lf`	| runs only last failed test
 `pytest --ff` | runs from last failed test and continues
 `pytest --nf` | tests new files first and then remaining files
@@ -14,6 +15,7 @@ Command | Result
 `pytest --sw` | stepwise fail/fix. Use --stepwise-skip if there's something that needs to be skipped until later
 `pytest test_file_name.py::test_blah` | run function `test_blah()` in test_file_name.py. Alternately test_file_name.py::TestClass::test_blah. Note test classes should be in format `Test<Something>`.
 `pytest --tb=no` | no traceback
+
 
 
 ## Using a config file
@@ -36,7 +38,7 @@ Override a function of an object such that it returns what you want it to. Examp
         assert current_order_status == 'processing'
 
 
-## pytest decorators
+## Decorators
 ### Custom marks
 Register custom marks in `pyproject.toml`:
 
@@ -50,11 +52,21 @@ Then you can mark particular tests with `@pytest.mark.slow` and run with:
 `pytest -m slow` - only run slow tests, or
 `pytest -m "not slow"` - only run not slow tests
 
+### Other decorators
+Decorator | Description
+------------ | -------------
+@pytest.fixture | [see Fixtures)(#fixtures)
+@pytest.mark.skip | skip a test
+@pytest.mark.skipif | skip a test conditionally
+@pytest.mark.xfail | test expected to fail
+
+## Fixtures
 ### @pytest.fixture
 Decorator to mark a fixture factory function.
 
     @pytest.fixture
     def fruit_bowl():
+    	# you could set up some other thing here, like grabbing data from a db
         return [Fruit("apple"), Fruit("banana")]
 
     def test_fruit_salad(fruit_bowl):
@@ -66,30 +78,37 @@ Decorator to mark a fixture factory function.
 
 In this example, `test_fruit_salad` “requests” `fruit_bowl`, and when pytest sees this, it will execute the `fruit_bowl()` fixture function and pass the object it returns into `test_fruit_salad` as the `fruit_bowl` argument.
 
-### Other useful decorators
-Decorator | Description
------------- | -------------
-@pytest.mark.skip | skip a test
-@pytest.mark.skipif | skip a test conditionally
-@pytest.mark.xfail | test expected to fail
+    import pytest
+
+    @pytest.fixture()
+    def jobs_database():
+        with TemporaryDirectory() as database_directory:
+        db = jobs.jobs_database(Path(database_directory))
+        yield db    # note that this yields so that once test is complete db can close
+        db.close()
+
+    def test_empty(jobs_database):
+        assert jobs_database.count() == 0
 
 
 ## Useful pytest plugins
 Name | Description
 ------------ | -------------
-pytest-xdist | splits tests across cores
-pytest-cov | shows code coverage
-pytest-clarity | for highlighting unexpected values in dictionaries
-pytest-instafail | stop on first failure
-pytest-sugar | errors/fails and progress bar
-pytest-benchmark | find slowest tests
-pytest-socket | disables network calls during testing
+`pytest-xdist` | splits tests across cores
+`pytest-cov` | shows code coverage
+`pytest-clarity` | for highlighting unexpected values in dictionaries
+`pytest-instafail` | stop on first failure
+`pytest-sugar` | errors/fails and progress bar
+`pytest-benchmark` | find slowest tests
+`pytest-socket` | disables network calls during testing
 
 ## Virtual Environment
 Should be provided by Poetry, else in your project folder:
 
     python3 -m venv venv
     .\venv\bin\Activate.ps1
+
+I couldn't get activate.bat to work on Windows.
 
 ## Black
 Install per this page:
@@ -101,7 +120,7 @@ After a pip install the path was:
 ## Checking for exceptions
 If the follow DOES NOT raise an error (TypeError in this case) then the test will fail:
 
-    with pytest.raises(TypeError) as excinfo:
+    with pytest.raises(TypeError):
         '2' % 2
 
 Can add more info, e.g. the expected the error message.
@@ -112,4 +131,15 @@ Can add more info, e.g. the expected the error message.
 
 ## Arrange, Act, Assert
 Remember to separate tests into stages, with asserts being at the end. It can be helpful to have a gap between the code blocks, but don't bother commenting each section as the structure will be obvious. Arrange-Act-Assert-Act-Assert ... is an anti-pattern.
+
+## Useful imports
+For paths:
+
+    from pathlib import Path
+
+For temp directories:
+
+    from tempfile import TemporaryDirectory
+    with TemporaryDirectory() as database_dir:
+        database_path = Path(database_directory)
 
