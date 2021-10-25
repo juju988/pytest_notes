@@ -3,16 +3,17 @@
 ## Useful arguments
 Command | Result
 ------------ | -------------
-pytest -x | exit after first failed test
-pytest -x --pdb | auto-start debugger at first failure point
-pytest --lf	| runs only last failed test
-pytest --ff | runs from last failed test and continues
-pytest --nf | tests new files first and then remaining files
-pytest --durations=2 | shows the 2 slowest tests
-pytest --durations=2 --vv | shows the 2 slowest tests with actual durations
-pytest --sw | stepwise fail/fix. Use --stepwise-skip if there's something that needs to be skipped until later
-pytest test_file_name::test_blah | run function `test_blah()` in test_file_name.py. Alternately test_file_name::TestClass::test_blah. Note test classes should be in format `Test<Something>`.
-pytest --tb=no | no traceback	
+`pytest -x` | exit after first failed test
+`pytest -x --pdb` | auto-start debugger at first failure point
+`pytest -k pattern` | run all tests matching pattern e.g. `pytest -k equality` would run all tests which have 'equality' in their name 	
+`pytest --lf`	| runs only last failed test
+`pytest --ff` | runs from last failed test and continues
+`pytest --nf` | tests new files first and then remaining files
+`pytest --durations=2` | shows the 2 slowest tests
+`pytest --durations=2 --vv` | shows the 2 slowest tests with actual durations
+`pytest --sw` | stepwise fail/fix. Use --stepwise-skip if there's something that needs to be skipped until later
+`pytest test_file_name.py::test_blah` | run function `test_blah()` in test_file_name.py. Alternately test_file_name.py::TestClass::test_blah. Note test classes should be in format `Test<Something>`.
+`pytest --tb=no` | no traceback
 
 
 ## Using a config file
@@ -95,4 +96,20 @@ Install per this page:
 https://black.readthedocs.io/en/stable/integrations/editors.html
 After a pip install the path was:
 ...\Documents\python_testing_with_pytest\venv\bin\black.exe
+
+
+## Checking for exceptions
+If the follow DOES NOT raise an error (TypeError in this case) then the test will fail:
+
+    with pytest.raises(TypeError) as excinfo:
+        '2' % 2
+
+Can add more info, e.g. the expected the error message.
+
+    match_regex = "not all arguments converted during string formatting"
+    with pytest.raises(TypeError, match=match_regex) as excinfo:
+        '2' % 2
+
+## Arrange, Act, Assert
+Remember to separate tests into stages, with asserts being at the end. It can be helpful to have a gap between the code blocks, but don't bother commenting each section as the structure will be obvious. Arrange-Act-Assert-Act-Assert ... is an anti-pattern.
 
