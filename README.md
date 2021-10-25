@@ -86,8 +86,9 @@ pytest-socket | disables network calls during testing
 
 ## Virtual Environment
 Should be provided by Poetry, else in your project folder:
+
     python3 -m venv venv
-    .\venv\bin\Activate.ps1   (for Windows, else 'activate')
+    .\venv\bin\Activate.ps1
 
 ## Black
 Install per this page:
