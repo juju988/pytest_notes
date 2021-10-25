@@ -55,7 +55,7 @@ Then you can mark particular tests with `@pytest.mark.slow` and run with:
 ### Other decorators
 Decorator | Description
 ------------ | -------------
-@pytest.fixture | [see Fixtures)(#fixtures)
+@pytest.fixture | [see Fixtures](#fixtures)
 @pytest.mark.skip | skip a test
 @pytest.mark.skipif | skip a test conditionally
 @pytest.mark.xfail | test expected to fail
