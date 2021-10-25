@@ -32,6 +32,23 @@ Then you can mark particular tests with `@pytest.mark.slow` and run with:
 `pytest -m slow` - only run slow tests, or
 `pytest -m "not slow"` - only run not slow tests
 
+### @pytest.fixture
+Decorator to mark a fixture factory function.
+
+    @pytest.fixture
+    def fruit_bowl():
+        return [Fruit("apple"), Fruit("banana")]
+
+    def test_fruit_salad(fruit_bowl):
+        # Act
+        fruit_salad = FruitSalad(*fruit_bowl)
+
+        # Assert
+        assert all(fruit.cubed for fruit in fruit_salad.fruit)
+
+In this example, `test_fruit_salad` “requests” `fruit_bowl`, and when pytest sees this, it will execute the fruit_bowl fixture function and pass the object it returns into test_fruit_salad as the fruit_bowl argument.
+
+
 ## Useful pytest plugins
 Name | Description
 ------------ | -------------
