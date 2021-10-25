@@ -18,6 +18,20 @@ pytest --sw | stepwise fail/fix. Use --stepwise-skip if there's something that n
 * Many projects (e.g. Black, coverage.py, tox, pytest) allow you to specify their configurations in the `pyproject.toml` file.
 
 ## Monkeypatching
+Override a function of an object such that it returns what you want it to. Example below of overriding a Stripe payment processor so that no actual call is made. `monkeypatch.setattr` arguments are object, method, return value (return value could also be a call to another method which returns something).
+
+    def charge_customer(amount):
+        response = Stripe(charge(amount))
+        if response.get('status') == 'success':
+            current_order_status = 'processing'
+        else:
+            display_error_message(respone.get('error'))
+
+    def test_payment(monkeypatch):
+        monkeypatch.setattr(Stripe, "charge", dict(status="success"))
+        charge_customer(199)
+        assert current_order_status == 'processing'
+
 
 ## pytest decorators
 Register customer marks in `pyproject.toml`:
@@ -46,7 +60,7 @@ Decorator to mark a fixture factory function.
         # Assert
         assert all(fruit.cubed for fruit in fruit_salad.fruit)
 
-In this example, `test_fruit_salad` “requests” `fruit_bowl`, and when pytest sees this, it will execute the fruit_bowl fixture function and pass the object it returns into test_fruit_salad as the fruit_bowl argument.
+In this example, `test_fruit_salad` “requests” `fruit_bowl`, and when pytest sees this, it will execute the `fruit_bowl()` fixture function and pass the object it returns into `test_fruit_salad` as the `fruit_bowl` argument.
 
 
 ## Useful pytest plugins
