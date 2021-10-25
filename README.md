@@ -15,7 +15,7 @@ Command | Result
 `pytest --sw` | stepwise fail/fix. Use --stepwise-skip if there's something that needs to be skipped until later
 `pytest test_file_name.py::test_blah` | run function `test_blah()` in test_file_name.py. Alternately test_file_name.py::TestClass::test_blah. Note test classes should be in format `Test<Something>`.
 `pytest --tb=no` | no traceback
-
+`pytest --setup-show` | show progress of setting up fixtures. Note that you'll get messages like `SETUP F fixture name` where `F` means 'Function scope'. [More info on Fixture Scope here](#fixture_scope)
 
 
 ## Using a config file
@@ -65,30 +65,48 @@ Decorator | Description
 Decorator to mark a fixture factory function.
 
     @pytest.fixture
-    def fruit_bowl():
-    	# you could set up some other thing here, like grabbing data from a db
-        return [Fruit("apple"), Fruit("banana")]
+    def user_group():
+        # Arrange
+        # you could set up some other thing here, like grabbing data from a db
+        return [User("Bill"), User("Ted")]
 
-    def test_fruit_salad(fruit_bowl):
+    def test_fruit_salad(user_group):
         # Act
-        fruit_salad = FruitSalad(*fruit_bowl)
+        group = Group(*user_group)
 
         # Assert
-        assert all(fruit.cubed for fruit in fruit_salad.fruit)
+        assert all(user.cool for user in group.users)
 
 In this example, `test_fruit_salad` “requests” `fruit_bowl`, and when pytest sees this, it will execute the `fruit_bowl()` fixture function and pass the object it returns into `test_fruit_salad` as the `fruit_bowl` argument.
 
     import pytest
 
     @pytest.fixture()
-    def jobs_database():
+    def temp_jobs_database():
         with TemporaryDirectory() as database_directory:
-        db = jobs.jobs_database(Path(database_directory))
-        yield db    # note that this yields so that once test is complete db can close
-        db.close()
+            db = jobs.jobs_database(Path(database_directory))    #setup...
+            yield db                # ... yield back to test_empty_db ...
+            db.close()              # ... teardown - close db ...
+                                    # ... and remove temporary directory
 
-    def test_empty(jobs_database):
+    def test_empty_db(temp_jobs_database):
         assert jobs_database.count() == 0
+
+*NOTE:* you can do multiple actions on the db returned by the fixture, e.g. adding multiple items, but it's torn down at the end of each `test_...` method.
+
+### Fixture Scope
+The default scope for fixtures is the function - so, if you call up a fixture in your function, when the function returns the fixture will be destroyed. Sometimes you don't want to do that, for example if what you're setting up in the fixture takes a while and you want to access it for multiple tests. Easy to do, just use this:
+
+    @pytest.fixture(scope='module')
+
+The complete set of keywords are:
+Keyword | Description
+------------ | -------------
+`function` | default
+`class` | run once per test class
+`module` | run once per module
+`package` | run once per package
+`session` | run once per test session
 
 
 ## Useful pytest plugins
