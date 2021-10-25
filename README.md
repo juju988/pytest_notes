@@ -21,11 +21,13 @@ pytest --sw | stepwise fail/fix. Use --stepwise-skip if there's something that n
 
 ## pytest decorators
 Register customer marks in `pyproject.toml`:
+
     [tool.pytest.ini_options]
     markers = [
         "slow: marks tests as slow (deselect with '-m \"not slow\"')",
         "serial",
     ]
+
 Then you can mark particular tests with `@pytest.mark.slow` and run with:
 `pytest -m slow` - only run slow tests, or
 `pytest -m "not slow"` - only run not slow tests
