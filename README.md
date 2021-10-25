@@ -11,6 +11,8 @@ pytest --nf | tests new files first and then remaining files
 pytest --durations=2 | shows the 2 slowest tests
 pytest --durations=2 --vv | shows the 2 slowest tests with actual durations
 pytest --sw | stepwise fail/fix. Use --stepwise-skip if there's something that needs to be skipped until later
+pytest test_file_name::test_blah | run function `test_blah()` in test_file_name.py. Alternately test_file_name::TestClass::test_blah. Note test classes should be in format `Test<Something>`.
+pytest --tb=no | no traceback	
 
 
 ## Using a config file
@@ -34,7 +36,8 @@ Override a function of an object such that it returns what you want it to. Examp
 
 
 ## pytest decorators
-Register customer marks in `pyproject.toml`:
+### Custom marks
+Register custom marks in `pyproject.toml`:
 
     [tool.pytest.ini_options]
     markers = [
@@ -62,6 +65,13 @@ Decorator to mark a fixture factory function.
 
 In this example, `test_fruit_salad` “requests” `fruit_bowl`, and when pytest sees this, it will execute the `fruit_bowl()` fixture function and pass the object it returns into `test_fruit_salad` as the `fruit_bowl` argument.
 
+### Other useful decorators
+Decorator | Description
+------------ | -------------
+@pytest.mark.skip | skip a test
+@pytest.mark.skipif | skip a test conditionally
+@pytest.mark.xfail | test expected to fail
+
 
 ## Useful pytest plugins
 Name | Description
@@ -73,3 +83,15 @@ pytest-instafail | stop on first failure
 pytest-sugar | errors/fails and progress bar
 pytest-benchmark | find slowest tests
 pytest-socket | disables network calls during testing
+
+## Virtual Environment
+Should be provided by Poetry, else in your project folder:
+    python3 -m venv venv
+    .\venv\bin\Activate.ps1   (for Windows, else 'activate')
+
+## Black
+Install per this page:
+https://black.readthedocs.io/en/stable/integrations/editors.html
+After a pip install the path was:
+...\Documents\python_testing_with_pytest\venv\bin\black.exe
+
