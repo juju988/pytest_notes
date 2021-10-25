@@ -2,6 +2,7 @@
 
 ## Useful arguments
 Command | Result
+------------ | -------------
 pytest --x | exit after first failed test
 pytest --pdb | auto-start debugger at first failure point
 pytest --lf	| runs only last failed test
