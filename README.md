@@ -15,7 +15,7 @@ Command | Result
 `pytest --sw` | stepwise fail/fix. Use --stepwise-skip if there's something that needs to be skipped until later
 `pytest test_file_name.py::test_blah` | run function `test_blah()` in test_file_name.py. Alternately test_file_name.py::TestClass::test_blah. Note test classes should be in format `Test<Something>`.
 `pytest --tb=no` | no traceback
-`pytest --setup-show` | show progress of setting up fixtures. Note that you'll get messages like `SETUP F fixture name` where `F` means 'Function scope'. [More info on Fixture Scope here](#fixture_scope)
+`pytest --setup-show` | show progress of setting up fixtures. Note that you'll get messages like `SETUP F fixture name` where `F` means 'Function scope'. [More info on Fixture Scope here](#fixture-scope)
 
 
 ## Using a config file
