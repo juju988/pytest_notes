@@ -306,8 +306,7 @@ Okken (2021)
 ### Hook parameters
 See `pytest_generate_tests` - p. 68 Okken (2021). Use if you want to change params with a CLI flag.
 
-##
-Markers
+## Markers
 Any time you want to be able to select a special set of tests you can give them a marker.
 
 Marker | Description
