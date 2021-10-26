@@ -7,7 +7,7 @@ Command | Result
 `pytest -x --pdb` | auto-start debugger at first failure point
 `pytest -k pattern` | run all tests matching pattern e.g. `pytest -k equality` would run all tests which have 'equality' in their name, `pytest -k 'equality and not fail'` would run tests that have 'equality' but not 'fail' in their name. `and`, `not` and `or` are allowed keywords, and parentheses are allowed for grouping. One option could be to have 'todo' in the name of the test and use `-k todo`.
 `pytest -v` | instead of greed dots or red F, output the name of the test and PASSED/FAILED. `-vv` gives even more info.
-`pytest --lf`	| runs only last failed test
+`pytest --lf`| runs only last failed test
 `pytest --ff` | runs from last failed test and continues
 `pytest --nf` | tests new files first and then remaining files
 `pytest --durations=2` | shows the 2 slowest tests
@@ -142,7 +142,7 @@ Instead of choosing from the default scopes you can set a custom scope by using 
 `my_custom_scope` is then defined in `conftest.py`:
 
     def my_custom_scope(fixture_name, config):
-        if config.getoption("--use_custom_scope", None):	# supply a command-line arg
+        if config.getoption("--use_custom_scope", None):    # supply a command-line arg
             return "function"
         return "session"
 
@@ -290,7 +290,7 @@ You can apply params to fixtures too:
 
     @pytest.fixture(params=['val1', 'val2', 'val3'])
     def do_something(request):
-    		return request.param
+        return request.param
 
     def test_fixture_parametrization(do_something):
         u = User(state=do_something)
@@ -305,6 +305,19 @@ Okken (2021)
 
 ### Hook parameters
 See `pytest_generate_tests` - p. 68 Okken (2021). Use if you want to change params with a CLI flag.
+
+##
+Markers
+Any time you want to be able to select a special set of tests you can give them a marker.
+
+Marker | Description
+------------ | -------------
+`@pytest.mark.skip(reason=None)` | skip the test (maybe it's still due for completion)
+`@pytest.mark.skipif(condition, ..., *, reason)` | 
+`@pytest.mark.xfail(condition, ..., *, reason, run=True, raises=None, strict=xfail_strict` | test is expected to fail
+`@pytest.mark.filterwarnings(warning)` | adds warning filter to test
+`@pytest.mark.parametrize(argnames, argvals)` | [see Function parameters](#function-parameters)
+`@pytest.mark.usefixtures(fix1, fix2, ...)` | mark a test as needing this bunch of fixtures
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
