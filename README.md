@@ -38,6 +38,8 @@ Override a function of an object such that it returns what you want it to. Examp
         charge_customer(199)
         assert current_order_status == 'processing'
 
+Other monkeypatch options:
+`setattr`, `delattr`, `setitem` (for dicts), `delitem`, `setenv` (for environment vars), `delenv`, `syspath_prepend` (for Python import locations), `chdir` (change pwd)
 
 ## Decorators
 ### Custom marks
@@ -164,6 +166,32 @@ You can set `autouse=True` for fixtures that you always want to run (autouse fix
         print(f'Elapsed time: {duration})
 
 Run pytest with the `-s` flag (shortcut for `--capture=no`) to output print statements even if the test did not fail.
+
+### Built in fixtures
+#### tmp_path (function scope)
+
+    def test_temp_path(tmp_path):
+        file = tmp_path / "a_file.txt"    # note the slash operator!
+
+The base directory is called `pytest-XX` where XX is numeric. Pytest only keeps the last few temporary directories and clears out older ones. Specify a custom base directory with `pytest --basetemp=custom_dirname`.
+
+#### tmp_path_factory (session scope)
+This is an alternative to `tempfile.TemporaryDirectory`
+
+    def test_temp_path_factory(tmp_path_factory):
+        path = tmp_path_factory.**mktemp**("my_temp_dir")
+        f = path / "a_file.txt"
+
+#### capsys
+Capture writes to stdout and stderr.
+
+    def test_capsys(capsys):
+        # do something that outputs to command line e.g. print statement
+        output, err = capsys.readouterr()
+        assert output.rstrip() == # expected output
+
+#### caplog
+Captures logger output
 
 ## Useful pytest plugins
 Name | Description
