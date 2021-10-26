@@ -24,7 +24,7 @@ Command | Result
 * Many projects (e.g. Black, coverage.py, tox, pytest) allow you to specify their configurations in the `pyproject.toml` file.
 
 ## Monkeypatching
-Override a function of an object such that it returns what you want it to. Example below of overriding a Stripe payment processor so that no actual call is made. `monkeypatch.setattr` arguments are object, method, return value (return value could also be a call to another method which returns something).
+Override a function of an object such that it returns what you want it to. `monkeypatch` is a built-in fixture. Example below of overriding a Stripe payment processor so that no actual call is made. `monkeypatch.setattr` arguments are object, method, return value (return value could also be a call to another method which returns something).
 
     def charge_customer(amount):
         response = Stripe(charge(amount))
@@ -168,6 +168,8 @@ You can set `autouse=True` for fixtures that you always want to run (autouse fix
 Run pytest with the `-s` flag (shortcut for `--capture=no`) to output print statements even if the test did not fail.
 
 ### Built in fixtures
+`tmp_path` and `monkeypath` are likely the most commonly used built in fixtures.
+
 #### tmp_path (function scope)
 
     def test_temp_path(tmp_path):
@@ -192,6 +194,8 @@ Capture writes to stdout and stderr.
 
 #### caplog
 Captures logger output
+
+There are a bunch more including `cache`, `recwarn` (for testing warning messages), `request` (self-reporting on the running test function), `testdir` (temporary test dir).
 
 #### monkeypatch
 [See Monkeypatching](#monkeypatching)
@@ -257,6 +261,20 @@ subprocess.run
 
 Or, a library called typer has a module typer.testing.CliRunner
 see p. 56 onwards of Okken (2021)
+
+## Parametrize
+Send in a bunch of different parameters. This example could be better.
+
+    @pytest.**mark**.parametrize('user_name, user_availability' 
+                                [(val1a, val2a), 
+                                (val1b, val2b), 
+                                (val1c, val2c)])
+    def test_parametrization(user_name, user_availability):
+        u = User(name=user_name, availability=user_availability)
+        id = Users.add(u)
+        assert # something or other
+
+The first arg for parametrize are the parameters (comma sep, note the quotes around them), the second arg is a list of tuples (or lists) of values. You can also call other fixtures outside the qu otes.
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
