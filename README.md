@@ -171,7 +171,7 @@ Run pytest with the `-s` flag (shortcut for `--capture=no`) to output print stat
 #### tmp_path (function scope)
 
     def test_temp_path(tmp_path):
-        file = tmp_path / "a_file.txt"    # note the slash operator!
+        file = tmp_path / "a_file.txt"    # note the slash operator! I think it works because it's a pathlib.Path?
 
 The base directory is called `pytest-XX` where XX is numeric. Pytest only keeps the last few temporary directories and clears out older ones. Specify a custom base directory with `pytest --basetemp=custom_dirname`.
 
@@ -192,6 +192,9 @@ Capture writes to stdout and stderr.
 
 #### caplog
 Captures logger output
+
+#### monkeypatch
+[See Monkeypatching](#monkeypatchin)
 
 ## Useful pytest plugins
 Name | Description
@@ -244,6 +247,16 @@ For temp directories:
     from tempfile import TemporaryDirectory
     with TemporaryDirectory() as database_dir:
         database_path = Path(database_directory)
+
+
+## Testing CLI applications
+subprocess.run
+
+    def test_cli_output():
+        ps = subprocess.run(['app_name', 'command'])
+
+Or, a library called typer has a module typer.testing.CliRunner
+see p. 56 onwards of Okken (2021)
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
