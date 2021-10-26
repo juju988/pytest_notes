@@ -194,7 +194,7 @@ Capture writes to stdout and stderr.
 Captures logger output
 
 #### monkeypatch
-[See Monkeypatching](#monkeypatchin)
+[See Monkeypatching](#monkeypatching)
 
 ## Useful pytest plugins
 Name | Description
