@@ -94,14 +94,29 @@ In this example, `test_fruit_salad` “requests” `fruit_bowl`, and when pytest
     def test_empty_db(temp_jobs_database):
         assert jobs_database.count() == 0
 
-*NOTE:* you can do multiple actions on the db returned by the fixture, e.g. adding multiple items, but it's torn down at the end of each `test_...` method.
+*NOTE 1:* you can do multiple actions on the db returned by the fixture, e.g. adding multiple items, but it's torn down at the end of each `test_...` method (if it's the default `function` scope. Code before `yield` is the setup code. Code after `yield` is the teardown code.
+
+*NOTE 2:* fixtures can call other fixtures. For example a db setup fixture with `session` scope could be called by a db reset fixture with `function` scope to keep test independence. Fixtures can only call other fixtures with equal or wider scope. Remember the scope is called out in the pytest output (and helpfully indented) e.g.:
+
+    SETUP    S   outer_fixture
+        SETUP    F    inner_fixture
+        # do some stuff
+        TEARDOWN    F    innerfixture
+    TEARDOWN    S    outer_fixture 
+
+*NOTE 3:* functions or fixtures can call multiple other fixtures (looks like multiple inheritance):
+
+    @pytest.fixture(scope="function")
+    def do_something_with_multiple_fixtures(fixture1, fixture2):
+        # e.g. combine fixture1 and fixture2
+        return fixture1
 
 ### Fixture Scope
 The default scope for fixtures is the function - so, if you call up a fixture in your function, when the function returns the fixture will be destroyed. Sometimes you don't want to do that, for example if what you're setting up in the fixture takes a while and you want to access it for multiple tests. Easy to do, just use this:
 
     @pytest.fixture(scope='module')
 
-The complete set of keywords are:
+The complete set of scope keywords are:
 Keyword | Description
 ------------ | -------------
 `function` | default
@@ -112,10 +127,43 @@ Keyword | Description
 
 *Note:* tests should not rely on run-order.
 
-
 ### conftest.py
 conftest.py is a 'local plugin' and can contain hook functions and fixtures. You need to put your fixture in here if you want it to be shared between multiple modules, as for when fixture scope is at `package` or `session` level. You still have to label the scope in the method signature and you'll have to provide the necessary imports, otherwise it's just a regular file. As an example you could add in the `temp_jobs_database()` method as used above. You don't have to import `conftest.py` into modules that use it - it's automatically imported by pytest when running. If you're using at `package` level you would want to have the file in the package directory.
 
+### Dynamic fixture scoping
+Instead of choosing from the default scopes you can set a custom scope by using a flag in the command line e.g.:
+
+   @pytest.fixture(scope=my_custom_scope)
+   def blah():
+       # blah
+
+`my_custom_scope` is then defined in `conftest.py`:
+
+    def my_custom_scope(fixture_name, config):
+        if config.getoption("--use_custom_scope", None):	# supply a command-line arg
+            return "function"
+        return "session"
+
+To allow us to use the above method we need to provide a hook function:
+
+    def pytest_addoption(parser):
+        parser.addoption("--use_custom_scope",
+                         action="store_true",
+                         default=False,
+                         help="reset for each test")
+
+### autouse
+You can set `autouse=True` for fixtures that you always want to run (autouse fixtures don't have to be explicitly called by a test):
+
+    @pytest.fixture(autouse=True, scope='session')
+    def test_timer():
+        """Report elapsed test time"""
+        start = time.time()
+        yield
+        duration = time.time() - start
+        print(f'Elapsed time: {duration})
+
+Run pytest with the `-s` flag (shortcut for `--capture=no`) to output print statements even if the test did not fail.
 
 ## Useful pytest plugins
 Name | Description
@@ -169,3 +217,5 @@ For temp directories:
     with TemporaryDirectory() as database_dir:
         database_path = Path(database_directory)
 
+## References
+Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
