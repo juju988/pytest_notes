@@ -16,6 +16,7 @@ Command | Result
 `pytest test_file_name.py::test_blah` | run function `test_blah()` in test_file_name.py. Alternately test_file_name.py::TestClass::test_blah. Note test classes should be in format `Test<Something>`.
 `pytest --tb=no` | no traceback
 `pytest --setup-show` | show progress of setting up fixtures. Note that you'll get messages like `SETUP F fixture name` where `F` means 'Function scope'. [More info on Fixture Scope here](#fixture-scope)
+`pytest --fixtures -v` | show available fixtures, the ones in `conftest.py` are at the bottom. The optional `-v` flag gives the filename containing the fixtures.
 
 
 ## Using a config file
@@ -66,6 +67,7 @@ Decorator to mark a fixture factory function.
 
     @pytest.fixture
     def user_group():
+        """ The docstring is output if you use pytest --fixtures """
         # Arrange
         # you could set up some other thing here, like grabbing data from a db
         return [User("Bill"), User("Ted")]
@@ -105,8 +107,14 @@ Keyword | Description
 `function` | default
 `class` | run once per test class
 `module` | run once per module
-`package` | run once per package
-`session` | run once per test session
+`package` | run once per package - [see conftest.py](#conftest.py)
+`session` | run once per test session - [see conftest.py](#conftest.py)
+
+*Note:* tests should not rely on run-order.
+
+
+### conftest.py
+conftest.py is a 'local plugin' and can contain hook functions and fixtures. You need to put your fixture in here if you want it to be shared between multiple modules, as for when fixture scope is at `package` or `session` level. You still have to label the scope in the method signature and you'll have to provide the necessary imports, otherwise it's just a regular file. As an example you could add in the `temp_jobs_database()` method as used above. You don't have to import `conftest.py` into modules that use it - it's automatically imported by pytest when running. If you're using at `package` level you would want to have the file in the package directory.
 
 
 ## Useful pytest plugins
@@ -132,7 +140,7 @@ I couldn't get activate.bat to work on Windows.
 Install per this page:
 https://black.readthedocs.io/en/stable/integrations/editors.html
 After a pip install the path was:
-...\Documents\python_testing_with_pytest\venv\bin\black.exe
+...\project_folder_path\venv\bin\black.exe
 
 
 ## Checking for exceptions
