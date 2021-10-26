@@ -5,7 +5,7 @@ Command | Result
 ------------ | -------------
 `pytest -x` | exit after first failed test
 `pytest -x --pdb` | auto-start debugger at first failure point
-`pytest -k pattern` | run all tests matching pattern e.g. `pytest -k equality` would run all tests which have 'equality' in their name, `pytest -k 'equality and not fail'` would run tests that have 'equality' but not 'fail' in their name. `and`, `not` and `or` are allowed keywords, and parentheses are allowed for grouping.
+`pytest -k pattern` | run all tests matching pattern e.g. `pytest -k equality` would run all tests which have 'equality' in their name, `pytest -k 'equality and not fail'` would run tests that have 'equality' but not 'fail' in their name. `and`, `not` and `or` are allowed keywords, and parentheses are allowed for grouping. One option could be to have 'todo' in the name of the test and use `-k todo`.
 `pytest -v` | instead of greed dots or red F, output the name of the test and PASSED/FAILED. `-vv` gives even more info.
 `pytest --lf`	| runs only last failed test
 `pytest --ff` | runs from last failed test and continues
@@ -181,7 +181,7 @@ The base directory is called `pytest-XX` where XX is numeric. Pytest only keeps 
 This is an alternative to `tempfile.TemporaryDirectory`
 
     def test_temp_path_factory(tmp_path_factory):
-        path = tmp_path_factory.**mktemp**("my_temp_dir")
+        path = tmp_path_factory.mktemp("my_temp_dir")
         f = path / "a_file.txt"
 
 #### capsys
@@ -263,18 +263,48 @@ Or, a library called typer has a module typer.testing.CliRunner
 see p. 56 onwards of Okken (2021)
 
 ## Parametrize
-Send in a bunch of different parameters. This example could be better.
+### Function parameters
+Send in a bunch of different parameters. This example could be better, see p. 64 onwards of Okken (2021), for more.
 
-    @pytest.**mark**.parametrize('user_name, user_availability' 
+    @pytest.mark.parametrize('user_name, user_availability', 
                                 [(val1a, val2a), 
                                 (val1b, val2b), 
                                 (val1c, val2c)])
-    def test_parametrization(user_name, user_availability):
+    def test_function_parametrization(user_name, user_availability):
         u = User(name=user_name, availability=user_availability)
         id = Users.add(u)
         assert # something or other
 
-The first arg for parametrize are the parameters (comma sep, note the quotes around them), the second arg is a list of tuples (or lists) of values. You can also call other fixtures outside the qu otes.
+The first arg for parametrize are the parameters (comma sep, note the quotes around them), the second arg is a list of tuples (or lists) of values. You can also call other fixtures outside the quotes.
+
+Note that it's better practise to only change the params you're interested in, as the output gives you each parameter that was tested. In the above, if you were only testing different values for `user.availability` it would make sense to set a default `user.name` and only pass in the changing arguments.
+
+You can specify a particular parameter to run by listing it in square brackets e.g.:
+
+    pytest "file_name.py::test_blah[actual parameter]"
+
+I'm not sure how this works but see p. 70 Okken (2021). Tip to use quotes to make sure brackets/spaces don't mess with the parameter.
+
+### Fixture parameters
+You can apply params to fixtures too:
+
+    @pytest.fixture(params=['val1', 'val2', 'val3'])
+    def do_something(request):
+    		return request.param
+
+    def test_fixture_parametrization(do_something):
+        u = User(state=do_something)
+        id = Users.add(u)
+        assert # something or other
+
+For every test that uses this fixture, the test will be called anew for each parameter. Note that this uses `return` not `yield` as you (or just me?) might expect.
+
+'same test, different data' - use function param
+'same test, different start state' - use fixture param
+Okken (2021)
+
+### Hook parameters
+See `pytest_generate_tests` - p. 68 Okken (2021). Use if you want to change params with a CLI flag.
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
