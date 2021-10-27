@@ -449,7 +449,28 @@ assertDictEqual(a, b) | dicts
     mock()
     >> KeyError: 'foo'
 
-Notice there is a Mock class and a MagicMock class. MagicMock implements a lot of magic methods and seems to be the one to use by default, but some people say you should use Mock as you might not want those magic methods to be implemented (so that you know you're testing the right behaviour, not the behaviour of the methods that MagicMock already has implemented).
+Notice there is a Mock class and a MagicMock class. MagicMock implements a lot of magic methods (the dunder methods) and seems to be the one to use by default, but some people say you should use Mock as you might not want those magic methods to be implemented (so that you know you're testing the right behaviour, not the behaviour of the methods that MagicMock already has implemented).
+
+Here are the magic methods as implemented in MagicMock:
+
+    __lt__: NotImplemented
+    __gt__: NotImplemented
+    __le__: NotImplemented
+    __ge__: NotImplemented
+    __int__: 1
+    __contains__: False
+    __len__: 0
+    __iter__: iter([])
+    __exit__: False
+    __aexit__: False
+    __complex__: 1j
+    __float__: 1.0
+    __bool__: True
+    __index__: 1
+    __hash__: default hash for the mock
+    __str__: default str for the mock
+    __sizeof__: default sizeof for the mock
+
 
 MagicMock - I don't know if Mock does this, but as in the example above you can 'add' methods to MagicMock just by calling them. If you do `dir(thing)` it will now have a method called `method`. Hmm, the normal unittest.Mock does exactly the same thing there. The methods of a method added using Mock and MagicMock also appear to be the same. So for `dir(thing.method)` outputs the same for both Mock and MagicMock:
 
@@ -465,6 +486,110 @@ Here's the complete signature:
 `class unittest.mock.Mock(spec=None, side_effect=None, return_value=DEFAULT, wraps=None, name=None, spec_set=None, unsafe=False, **kwargs)`
 
 `spec` is for an existing object but you can add new methods. `spec_set` is to use an existing object but not allow adding new methods. Setting `name` can be useful for debugging.
+
+
+### Patch
+`unittest.mock.patch(target, new=DEFAULT, spec=None, create=False, spec_set=None, autospec=None, new_callable=None, **kwargs)`
+
+`patch()` can be a function or class decorator, or a context manager. `target` is patched with `new` object. The patch is undone when the function or with statement exits. Note that if `new` is omitted then `target` is replace with `MagicMock` (not `Mock`) (or `AsyncMock` if it's an `async` method). `target` in the format `package.module.ClassName`. If you set `spec=True` the mock will have the methods of the target but you can add new ones, or if `spec_set=True` then you can't add new ones. `autospec=True` is more powerful, will copy over the attributes of the `target` too. Methods and functions with `autospec` will have their args checked and will raise `TypeError` if called with the wrong signature.
+
+`patch()` takes arbitrary keyword arguments.
+
+I think the equivalent in pytest is `monkeypatch` - here's an example:
+
+    import pytest_mock
+
+    def test_electric_guitars(guitar_data: List[...], mocker: pytest_mock.MockFixture):
+        mocker.patch('get_guitars_from_db', autospec=True, return_value=guitar_data)
+
+So, looks like the `get_guitars_from_db().return_value` attribute is overridden.
+
+#### patch.object
+`patch.object(target, attribute, new=DEFAULT, spec=None, create=False, spec_set=None, autospec=None, new_callable=None, **kwargs)`
+
+    @patch.object(SomeClass, 'class_method')
+    def test(mock_method):
+        SomeClass.class_method(3)
+        mock_method.assert_called_with(3)
+
+So, maybe `object` can be anything? Here's another example, this time patching a dictionary:
+
+    @patch.dict('os.environ', {'newkey': 'newvalue'})
+    class TestSample(unittest.TestCase):
+        def test_sample(self):
+            self.assertEqual(os.environ['newkey'], 'newvalue')
+
+`patcher` objects have `start()` and `stop()` methods, so you can turn off the patch mid-function. Be aware that you have to patch an object where it is looked up, usually the place where it is instantiated.
+
+## Notes on testing
+Overall approach is to be very fine detailed. Test one thing at a time.
+
+### Things to test
+Think about:
+    * non-trivial happy path
+    * interesting inputs e.g. 0, 1, >1, <1, huge numbers, optional inputs, empty inputs, invalid inputs. Do you allow duplicate objects? May need to define what a duplicate is.
+    * error states and error handling. What specific Exceptions will be raised? What are the logging levels?
+    * interesting end states, such as an error, or an empty database
+
+In delving deeper it might raise questions about desired behaviour which is a great time to get feedback from the team.
+
+Write down a **Testing Strategy** before you get started on testing. Easy to get lost in the details. Have somewhere you can share that with the team (maybe on the story?).
+
+### Config files
+`pytest.ini`: primary pytest config file, also defines pytest root dir
+`conftest.py`: fixtures and hook functions
+`__init__.py`: including in a folder allows test to have same name as in another folder
+`tox.ini`: alternative to pytest.ini
+`pyproject.toml`: alternative to pytest.ini - **used by Poetry**. To use Black you need to configure here.
+`setup.cfg`: alternative to pytest.ini
+
+#### pytest.ini
+Example:
+
+    [pytest]
+    addopts =
+        --strict-markers        # don't allow typos in markers
+        --strict-config         # don't skip over difficulties loading confg
+        -ra                     # display extra info on failures/errors at end of test run
+
+    testpaths = tests           # where to look for tests
+
+    markers =
+        smoke: subset of tests
+        exception: check for expected exceptions
+
+#### pyproject.toml
+Example:
+
+    [tool.pytest.ini_options]
+    addopts = [
+        "--strict-markers",
+        "--strict-config",
+        "-ra"
+        ]
+
+    testpaths = "tests"
+
+    markers = [
+        "smoke: subset of tests",
+        "exception: check for expected exceptions"
+    ]
+
+#### setup.cfg
+Example:
+
+    [tool:pytest]
+    addopts =
+        --strict-markers
+        --strict-config
+        -ra
+
+    testpaths = tests
+
+    markers =
+        smoke: subset of tests
+        exception: check for expected exceptions
+
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
