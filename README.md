@@ -435,7 +435,7 @@ assertTupleEqual(a, b) | tuples
 assertSetEqual(a, b) | sets or frozensets
 assertDictEqual(a, b) | dicts
 
-### unittest.mock
+### [Mock](https://docs.python.org/3/library/unittest.mock.html) and MagicMock
 
     from unittest.mock import MagicMock
     thing = ProductionClass()
@@ -448,6 +448,23 @@ assertDictEqual(a, b) | dicts
     mock = Mock(side_effect=KeyError('foo'))
     mock()
     >> KeyError: 'foo'
+
+Notice there is a Mock class and a MagicMock class. MagicMock implements a lot of magic methods and seems to be the one to use by default, but some people say you should use Mock as you might not want those magic methods to be implemented (so that you know you're testing the right behaviour, not the behaviour of the methods that MagicMock already has implemented).
+
+MagicMock - I don't know if Mock does this, but as in the example above you can 'add' methods to MagicMock just by calling them. If you do `dir(thing)` it will now have a method called `method`. Hmm, the normal unittest.Mock does exactly the same thing there. The methods of a method added using Mock and MagicMock also appear to be the same. So for `dir(thing.method)` outputs the same for both Mock and MagicMock:
+
+`['assert_any_call', 'assert_called', 'assert_called_once', 'assert_called_once_with', 'assert_called_with', 'assert_has_calls', 'assert_not_called', 'attach_mock', 'call_args', 'call_args_list', 'call_count', 'called', 'configure_mock', 'method_calls', 'mock_add_spec', 'mock_calls', 'reset_mock', 'return_value', 'side_effect']`
+
+You can add a side_effect by doing:
+
+    thing.method.side_effect = TypeError
+
+So if you then call `thing.method()` an error will be raised. `side_effect` just defines something to be called any time the Mock is called - it can be a function, for raising exceptions, or dynamically changing return values. If you call `type(thing.method)` you get `<class 'unittest.mock.Mock'>`. A `side_effect` can be cleared by setting it to `None`.
+
+Here's the complete signature:
+`class unittest.mock.Mock(spec=None, side_effect=None, return_value=DEFAULT, wraps=None, name=None, spec_set=None, unsafe=False, **kwargs)`
+
+`spec` is for an existing object but you can add new methods. `spec_set` is to use an existing object but not allow adding new methods. Setting `name` can be useful for debugging.
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
