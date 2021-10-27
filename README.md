@@ -7,6 +7,7 @@ Command | Result
 `pytest -x --pdb` | auto-start debugger at first failure point
 `pytest -k pattern` | run all tests matching pattern e.g. `pytest -k equality` would run all tests which have 'equality' in their name, `pytest -k 'equality and not fail'` would run tests that have 'equality' but not 'fail' in their name. `and`, `not` and `or` are allowed keywords, and parentheses are allowed for grouping. One option could be to have 'todo' in the name of the test and use `-k todo`.
 `pytest -v` | instead of greed dots or red F, output the name of the test and PASSED/FAILED. `-vv` gives even more info.
+`pytest -ra` | output `@pytest.mark.skip` reasons at end of test report. (-r for reason, -a for all except passed)
 `pytest --lf`| runs only last failed test
 `pytest --ff` | runs from last failed test and continues
 `pytest --nf` | tests new files first and then remaining files
@@ -17,6 +18,8 @@ Command | Result
 `pytest --tb=no` | no traceback
 `pytest --setup-show` | show progress of setting up fixtures. Note that you'll get messages like `SETUP F fixture name` where `F` means 'Function scope'. [More info on Fixture Scope here](#fixture-scope)
 `pytest --fixtures -v` | show available fixtures, the ones in `conftest.py` are at the bottom. The optional `-v` flag gives the filename containing the fixtures.
+`pytest --markers` | list the markers in use in the project, including custom ones.
+
 
 
 ## Using a config file
@@ -59,7 +62,7 @@ Then you can mark particular tests with `@pytest.mark.slow` and run with:
 Decorator | Description
 ------------ | -------------
 @pytest.fixture | [see Fixtures](#fixtures)
-@pytest.mark.skip | skip a test
+@pytest.mark.skip | skip a test - see [Markers](#markers) for this and the following two lines
 @pytest.mark.skipif | skip a test conditionally
 @pytest.mark.xfail | test expected to fail
 
@@ -224,7 +227,8 @@ Install per this page:
 https://black.readthedocs.io/en/stable/integrations/editors.html
 After a pip install the path was:
 ...\project_folder_path\venv\bin\black.exe
-
+Alternately (on another system)
+...\project_folder_path\venv\scripts\black.exe
 
 ## Checking for exceptions
 If the follow DOES NOT raise an error (TypeError in this case) then the test will fail:
@@ -309,14 +313,143 @@ See `pytest_generate_tests` - p. 68 Okken (2021). Use if you want to change para
 ## Markers
 Any time you want to be able to select a special set of tests you can give them a marker.
 
+### Built in markers
+
 Marker | Description
 ------------ | -------------
 `@pytest.mark.skip(reason=None)` | skip the test (maybe it's still due for completion)
-`@pytest.mark.skipif(condition, ..., *, reason)` | 
-`@pytest.mark.xfail(condition, ..., *, reason, run=True, raises=None, strict=xfail_strict` | test is expected to fail
+`@pytest.mark.skipif(condition, ..., *, reason)` | condition can be anything that evaluates to True. Any True condition will make the test skip. An example if you want to test different things based on different environment variables.
+`@pytest.mark.xfail(condition, ..., *, reason, run=True, raises=None, strict=xfail_strict` | test is expected to fail - useful for TDD
 `@pytest.mark.filterwarnings(warning)` | adds warning filter to test
 `@pytest.mark.parametrize(argnames, argvals)` | [see Function parameters](#function-parameters)
 `@pytest.mark.usefixtures(fix1, fix2, ...)` | mark a test as needing this bunch of fixtures
 
+### Custom markers
+
+    @pytest.mark.smoke
+
+Select using `pytest -m smoke`. You can add to the top of a test class as well (which effectively adds it to all methods) as just to a single method. You can apply multiple marks to a method just by stacking them up.
+
+In order to stop pytest complaining about custom markers you have to register them in `pytest.ini`:
+
+    [pytest]
+    markers =
+        smoke: just some smoke tests - this description can be handy for other devs to see what was intended
+
+Use `pytestmark` to apply the mark to all the tests in a module:
+
+    `pytestmark = pytest.mark.smoke`
+
+or multiple markers
+
+    `pytestmark = [pytest.mark.smoke, pytest.mark.initial]`
+
+You can apply to fixtures:
+
+    @pytest.fixture(params=[pytest.param(marks=pytest.mark.smoke), 'val1', 'val2', 'val3'])
+    def do_something(request):
+        return request.param
+
+You can run for multiple markers using `and`, `or`, `not` keywords and brackets (remember the quotes):
+
+    pytest -m "smoke and not initial"        
+
+You can add --strict-markers to your pytest.ini files to give quick feedback on errors involving misspelled marks.
+
+    [pytest]
+    addopts =
+        --strict-markers
+        -ra        # recommended
+
+    xfail_strict true    # recommended - report an xfail test that passes as an error
+
+There is a way to pass arguments to fixtures to enable them to do different things - see p. 89 Okken (2021).
+
+## Unittest
+Typical set up:
+
+    import unittest
+
+    class TestStringMethods(unittest.TestCase):
+
+        def setUp():
+            # same as a fixture in pytest
+
+        def test_upper(self):                      # tests start 'test...'
+            self.assertEqual('foo'.upper(), 'FOO')
+
+        def tearDown():
+            # teardown stuff         
+
+    if __name__ == "__main__":
+        unittest.main()                            # runs all unittest test cases
+
+There are class and module-level fixture methods (setUpClass, tearDownClass, setUpModule, tearDownModule)
+
+To run:
+python -m unittest -v tests/test_module1.TestClass.test_method
+-v to increase verbosity
+
+Decorators similar to pytest. Can be applied to classes as well as functions.
+
+Decorator/Marker | Description
+------------ | -------------
+@unittest.skip | skip
+@unittest.skipIf | skipif
+@unittest.skipUnless | why not just use skipif?
+@unittest.expectedFailure | xfail
+
+Looks like the equivalent of parametrized testing is the `self.subTest`?
+
+### Asserts
+Method | Checks that
+------------ | -------------
+assertEqual(a, b) | a == b
+assertNotEqual(a, b) | a != b
+assertTrue(x) | bool(x) is True
+assertFalse(x) | bool(x) is False
+assertIs(a, b) | a is b
+assertIsNot(a, b) | a is not b
+assertIsNone(x) | x is None
+assertIsNotNone(x) | x is not None
+assertIn(a, b) | a in b
+assertNotIn(a, b) | a not in b
+assertIsInstance(a, b) | isinstance(a, b)
+assertNotIsInstance(a, b) | not isinstance(a, b)
+assertRaises(exc, fun, *args, **kwds) | fun(*args, **kwds) raises exc
+assertLogs(logger, level) | The `with` block logs on *logger* with minimum *level*
+assertNoLogs(logger, level) | The `with` block does not log on *logger* with minimum *level*
+assertAlmostEqual(a, b) | round(a-b, 7) == 0
+assertNotAlmostEqual(a, b) | round(a-b, 7) != 0
+assertGreater(a, b) | a > b
+assertGreaterEqual(a, b) | a >= b
+assertLess(a, b) | a < b
+assertLessEqual(a, b) | a <= b
+assertRegex(s, r) | r.search(s)
+assertNotRegex(s, r) | not r.search(s)
+assertCountEqual(a, b) | *a* and *b* have the same elements in the same number, regardless of their order.
+assertMultiLineEqual(a, b) | strings
+assertSequenceEqual(a, b) | sequences
+assertListEqual(a, b) | lists
+assertTupleEqual(a, b) | tuples
+assertSetEqual(a, b) | sets or frozensets
+assertDictEqual(a, b) | dicts
+
+### unittest.mock
+
+    from unittest.mock import MagicMock
+    thing = ProductionClass()
+    thing.method = MagicMock(return_value=3)
+    thing.method(3, 4, 5, key='value')
+    >> 3
+
+`side_effect` allows raising an exception when a mock is called.
+
+    mock = Mock(side_effect=KeyError('foo'))
+    mock()
+    >> KeyError: 'foo'
+
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
+Python Software Foundation (2021) *unittest — Unit testing framework* https://docs.python.org/3/library/unittest.html
+Python Software Foundation (2021) *Quick Guide* https://docs.python.org/3/library/unittest.mock.html
