@@ -683,6 +683,11 @@ Using the `with` context manager clears up the patch once done. I guess it would
 
 Mocking stuff that returns something is quite intuitive, as per the above example. But how do you test a function that doesn't return anything? In this case you can make an assert that it was called correctly using `object.method.assert_called_with(args)`:
 
+    @pytest.fixture()
+    def mock_cardsdb():
+        with mock.patch("cards.cli.cards.CardsDB", autospec=True) as CardsDB:
+            yield CardsDB.return_value
+
     def test_add_with_owner(mock_cardsdb):
         cards_cli("add some task -o brian")
         expected = cards.Card("some task", owner="brian", state="todo")
