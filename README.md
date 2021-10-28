@@ -699,8 +699,48 @@ The above will fail if the method was called with the wrong arguments, even the 
 
 There is such a thing as *Designing for Testability*, where you could for example emit some output (a `print` statement maybe) to confirm that an action was carried out, rather than returning nothing.
 
+Here are a couple of exercises from Okken (2021) Chapter 10 which it took me a while to get my head around:
 
+1. In test_my_info.py, write a test that uses mock and changes the return value of Path.home() to "/users/fake_user", and checks the return value of home_dir().
+    
+    import my_info
 
+    def test_my_home_returns_correct_value():
+        with mock.patch('my_info.home_dir', autospec=True) as mock_home_dir:
+            mock_home_dir.return_value = "/users/fake_user"
+            value = my_info.home_dir()
+            assert value == "/users/fake_user"
+
+Notes: first problem was that because `my_info` is imported I thought I could just refer to `home_dir` (e.g. `with mock.patch('home_dir')`) but you have to use the full dotted path, i.e. `my_info.home_dir`. Just add `as mock_...` to make the name clear. Then you specify what you want the mock method to return with `return_value`. Then call the actual method and the mock method will be called instead.
+
+2. Write another test that also calls home_dir(), but instead of checking the value, just asserts that Path.home() is called by home_dir().
+
+    def test_my_home_is_called():
+        with mock.patch('my_info.Path.home', autospec=True) as mock_path:
+            my_info.home_dir()
+            mock_path.assert_called_once()
+        # check to see if Path.home() was called
+
+Notes: again had a mental block with what to patch - it turned out to be the full dotted path through to the `Path.home()` method. Again, call the actual method and the patched-in object will be called.
+
+## Continuous Integration
+[`tox`](https://tox.readthedocs.io/en/latest) is a CI tool that can be run locally and in conjunction with other CI tools on a server. You can use `tox` to test your app in multiple versions of Python. I don't really want to do that right now so skipping that. This is Okken (2021) chapter 11.
+
+Well, actually, you don't HAVE to test in multiple Python versions, you can just stick to one and `tox` can do other stuff.
+
+Here's an example tox.ini file:
+
+    [tox]
+    envlist = py308
+    isolated_build = True
+    
+    [testenv]
+    deps =
+        pytest
+        faker
+    commands = pytest
+
+If you run `tox` on the cmd line it will install the envlist, then the dependencies, and then will run pytest.
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
