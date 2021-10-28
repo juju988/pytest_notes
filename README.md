@@ -319,7 +319,7 @@ Marker | Description
 ------------ | -------------
 `@pytest.mark.skip(reason=None)` | skip the test (maybe it's still due for completion)
 `@pytest.mark.skipif(condition, ..., *, reason)` | condition can be anything that evaluates to True. Any True condition will make the test skip. An example if you want to test different things based on different environment variables.
-`@pytest.mark.xfail(condition, ..., *, reason, run=True, raises=None, strict=xfail_strict` | test is expected to fail - useful for TDD
+`@pytest.mark.xfail(condition, ..., *, reason, run=True, raises=None, strict=xfail_strict)` | test is expected to fail - useful for TDD
 `@pytest.mark.filterwarnings(warning)` | adds warning filter to test
 `@pytest.mark.parametrize(argnames, argvals)` | [see Function parameters](#function-parameters)
 `@pytest.mark.usefixtures(fix1, fix2, ...)` | mark a test as needing this bunch of fixtures
@@ -375,14 +375,14 @@ Typical set up:
         def setUp():
             # same as a fixture in pytest
 
-        def test_upper(self):                      # tests start 'test...'
+        def test_upper(self):       # tests start 'test...'
             self.assertEqual('foo'.upper(), 'FOO')
 
         def tearDown():
             # teardown stuff         
 
     if __name__ == "__main__":
-        unittest.main()                            # runs all unittest test cases
+        unittest.main()             # runs all unittest test cases
 
 There are class and module-level fixture methods (setUpClass, tearDownClass, setUpModule, tearDownModule)
 
@@ -512,7 +512,7 @@ So, looks like the `get_guitars_from_db().return_value` attribute is overridden.
         SomeClass.class_method(3)
         mock_method.assert_called_with(3)
 
-So, maybe `object` can be anything? Here's another example, this time patching a dictionary:
+I don't really understand the example above. What is `mock_method`? So, maybe `object` can be anything? Here's another example, this time patching a dictionary:
 
     @patch.dict('os.environ', {'newkey': 'newvalue'})
     class TestSample(unittest.TestCase):
@@ -645,13 +645,42 @@ You can exclude certain lines from testing if absolutely not needed by marking t
 
 Here's a breakdown of commands:
 `pytest --cov=cards <test path>`: run with a simple report.
-`pytest --cov=cards --report=term-missing <test path>`: which lines weren’t
-run.
+`pytest --cov=cards --report=term-missing <test path>`: which lines weren’t run.
 `pytest --cov=cards --report=html <test path>`:  generate an HTML report.
 `coverage run --source=cards -m pytest <test path>`: run the test suite with coverage.
 `coverage report`: show a simple terminal report.
 `coverage report --show-missing`: show which lines weren’t run.
 `coverage html`: generate an HTML report.
+
+## Mocking
+See Chapter 10 of Okken (2010)
+`patch` is the workhorse of mocking. Here's an example:
+
+    def test_mock_version():
+        with mock.patch('cards.cli.cards') as mock_cards:
+            mock_cards.__version__ = '1.2.3'
+            result = runner.invoke(app, ["version"])
+            assert result.stdout.rstrip() == '1.2.3'
+
+Using the `with` context manager clears up the patch once done. I guess it would be cleared anyway though once function exited? Note in Okken (2021) that the weird part is you're patching `cards.cli.cards` rather than `cards`. You have to patch what the CLI will be seeing. `cards.cli` imports `cards` so that's where you have to do the patching.
+
+## Context Manager
+Just a nice way to get access to the flat file db:
+
+    from contextlib import contextmanager
+    @contextmanager
+        def cards_db():
+        db_path = get_path()
+        db = cards.CardsDB(db_path)
+        yield db
+        db.close()
+
+Within the code, whenever the db is required, just use:
+
+    with cards_db() as db:
+        # do whatever with db
+
+Lovely!
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
