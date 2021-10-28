@@ -538,19 +538,21 @@ Write down a **Testing Strategy** before you get started on testing. Easy to get
 ### Config files
 `pytest.ini`: primary pytest config file, also defines pytest root dir
 `conftest.py`: fixtures and hook functions
-`__init__.py`: including in a folder allows test to have same name as in another folder
+`__init__.py`: including in a folder allows test to have same name as in another folder. Good habit to have __init__.py in each folder so collisions don't come up.
 `tox.ini`: alternative to pytest.ini
 `pyproject.toml`: alternative to pytest.ini - **used by Poetry**. To use Black you need to configure here.
 `setup.cfg`: alternative to pytest.ini
 
+If you launch pytest in a folder that doesn't contain a config file it will look up in the next directory recursively until it finds a config file. If it doesn't find one it won't run unless you've specified the start folder. When it finds a config file that's the root directory (`rootdir`). So best to have a pytest.ini at the root of your project even if you don't have any settings in it, just to prevent pytest from running up further and accidentally picking up the config file for another project. You can have a different conftest.py file in each folder if you want, for defining different fixtures/hooks. Lower conftest.py files inherit from ones further up the directory structure, may be better to stick to one though for simplicity.
+
 #### pytest.ini
-Example:
 
     [pytest]
     addopts =
         --strict-markers        # don't allow typos in markers
         --strict-config         # don't skip over difficulties loading confg
         -ra                     # display extra info on failures/errors at end of test run
+        -v                      # make verbose
 
     testpaths = tests           # where to look for tests
 
@@ -559,7 +561,6 @@ Example:
         exception: check for expected exceptions
 
 #### pyproject.toml
-Example:
 
     [tool.pytest.ini_options]
     addopts = [
@@ -576,7 +577,6 @@ Example:
     ]
 
 #### setup.cfg
-Example:
 
     [tool:pytest]
     addopts =
@@ -590,6 +590,68 @@ Example:
         smoke: subset of tests
         exception: check for expected exceptions
 
+## Coverage
+coverage.py measures code coverage. pytest-cov is a plugin that makes it slightly easier to use.
+
+    pip install coverage
+    pip install pytest-cov
+
+    pytest --cov=name_of_folder name_of_subfolder       # space separated.
+    pytest --cov=some_code some_code/test_some_code.py  # test code in 'some_code' with 'test_some_code.py'
+    pytest --cov=some_code some_code                    # equiv to above line because 'test_some_code.py' is the only file in the directory starting with 'test_'.
+
+For a single file (that also contained test_ functions within it) this worked:
+
+    pytest --cov=single_file single_file.py
+
+This correctly doesn't expect there to be tests for the test_ functions.
+
+Coverage has a config file too, called `.coveragerc` (in the root folder of the whole project) which should point to the code under test (I think):
+
+    [paths]
+    source =
+        cards_proj/src/cards
+        */site-packages/cards
+
+Here's the description in Okken (2021) which I don't understand:
+"This file is the coverage.py configuration file, and the source setting tells coverage
+to treat the cards_proj/src/cards directory as if it’s the same as the installed cards
+within */site-packages/cards. The asterisk (*) is a wildcard there to save us a bit
+of typing. You can type out the whole /path/to/venv/lib/python3.x/site-packages/cards
+path if you wish."
+
+Ah, OK this is very cool - find lines that are not covered by tests:
+
+    coverage report --show-missing
+
+    ...
+    venv\lib\python3.9\site-packages\cards\api.py           72      3    96%   72, 76, 78
+    venv\lib\python3.9\site-packages\cards\cli.py           86     53    38%   17, 24-26, 31
+    -35, 45-59, 69-74, 80-84, 90-94, 100-101, 107-108, 116-117, 120-125, 130-133
+    ...
+
+To view that report in html format:
+
+    coverage html
+
+Ohhh - OK now that's super cool! You can click into the files and see exactly which lines are not called by the tests.
+
+You can exclude certain lines from testing if absolutely not needed by marking the block like this:
+
+    if __name__ == '__main__':  # pragma: no cover
+        main()
+    else:
+        import pytest           # this allows parametrization and markers
+
+Here's a breakdown of commands:
+`pytest --cov=cards <test path>`: run with a simple report.
+`pytest --cov=cards --report=term-missing <test path>`: which lines weren’t
+run.
+`pytest --cov=cards --report=html <test path>`:  generate an HTML report.
+`coverage run --source=cards -m pytest <test path>`: run the test suite with coverage.
+`coverage report`: show a simple terminal report.
+`coverage report --show-missing`: show which lines weren’t run.
+`coverage html`: generate an HTML report.
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
