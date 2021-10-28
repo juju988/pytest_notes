@@ -64,7 +64,7 @@ Decorator | Description
 @pytest.fixture | [see Fixtures](#fixtures)
 @pytest.mark.skip | skip a test - see [Markers](#markers) for this and the following two lines
 @pytest.mark.skipif | skip a test conditionally
-@pytest.mark.xfail | test expected to fail
+@pytest.mark.xfail | test expected to fail - add flags `(reason='a reason', strict=True)` to raise Error if passes
 
 ## Fixtures
 ### @pytest.fixture
@@ -319,7 +319,7 @@ Marker | Description
 ------------ | -------------
 `@pytest.mark.skip(reason=None)` | skip the test (maybe it's still due for completion)
 `@pytest.mark.skipif(condition, ..., *, reason)` | condition can be anything that evaluates to True. Any True condition will make the test skip. An example if you want to test different things based on different environment variables.
-`@pytest.mark.xfail(condition, ..., *, reason, run=True, raises=None, strict=xfail_strict)` | test is expected to fail - useful for TDD
+`@pytest.mark.xfail(condition, ..., *, reason, run=True, raises=None, strict=True)` | test is expected to fail - useful for TDD
 `@pytest.mark.filterwarnings(warning)` | adds warning filter to test
 `@pytest.mark.parametrize(argnames, argvals)` | [see Function parameters](#function-parameters)
 `@pytest.mark.usefixtures(fix1, fix2, ...)` | mark a test as needing this bunch of fixtures
@@ -491,7 +491,7 @@ Here's the complete signature:
 ### Patch
 `unittest.mock.patch(target, new=DEFAULT, spec=None, create=False, spec_set=None, autospec=None, new_callable=None, **kwargs)`
 
-`patch()` can be a function or class decorator, or a context manager. `target` is patched with `new` object. The patch is undone when the function or with statement exits. Note that if `new` is omitted then `target` is replace with `MagicMock` (not `Mock`) (or `AsyncMock` if it's an `async` method). `target` in the format `package.module.ClassName`. If you set `spec=True` the mock will have the methods of the target but you can add new ones, or if `spec_set=True` then you can't add new ones. `autospec=True` is more powerful, will copy over the attributes of the `target` too. Methods and functions with `autospec` will have their args checked and will raise `TypeError` if called with the wrong signature.
+`patch()` can be a function or class decorator, or a context manager. `target` is patched with `new` object. The patch is undone when the function or with statement exits. Note that if `new` is omitted then `target` is replace with `MagicMock` (not `Mock`) (or `AsyncMock` if it's an `async` method). `target` in the format `package.module.ClassName`. If you set `spec=True` the mock will have the methods of the target but you can add new ones, or if `spec_set=True` then you can't add new ones. `autospec=True` **is better**, will copy over the attributes of the `target` too. Methods and functions with `autospec` will have their args checked and will raise `TypeError` if called with the wrong signature.
 
 `patch()` takes arbitrary keyword arguments.
 
@@ -652,18 +652,6 @@ Here's a breakdown of commands:
 `coverage report --show-missing`: show which lines weren’t run.
 `coverage html`: generate an HTML report.
 
-## Mocking
-See Chapter 10 of Okken (2010)
-`patch` is the workhorse of mocking. Here's an example:
-
-    def test_mock_version():
-        with mock.patch('cards.cli.cards') as mock_cards:
-            mock_cards.__version__ = '1.2.3'
-            result = runner.invoke(app, ["version"])
-            assert result.stdout.rstrip() == '1.2.3'
-
-Using the `with` context manager clears up the patch once done. I guess it would be cleared anyway though once function exited? Note in Okken (2021) that the weird part is you're patching `cards.cli.cards` rather than `cards`. You have to patch what the CLI will be seeing. `cards.cli` imports `cards` so that's where you have to do the patching.
-
 ## Context Manager
 Just a nice way to get access to the flat file db:
 
@@ -681,6 +669,33 @@ Within the code, whenever the db is required, just use:
         # do whatever with db
 
 Lovely!
+
+## Mocking
+See Chapter 10 of Okken (2010). `patch` is the workhorse of mocking. Here's an example:
+
+    def test_mock_version():
+        with mock.patch('cards.cli.cards') as mock_cards:
+            mock_cards.__version__ = '1.2.3'
+            result = runner.invoke(app, ["version"])
+            assert result.stdout.rstrip() == '1.2.3'
+
+Using the `with` context manager clears up the patch once done. I guess it would be cleared anyway though once function exited? Note in Okken (2021) that the weird part is you're patching `cards.cli.cards` rather than `cards`. You have to patch what the CLI will be seeing. `cards.cli` imports `cards` so that's where you have to do the patching.
+
+Mocking stuff that returns something is quite intuitive, as per the above example. But how do you test a function that doesn't return anything? In this case you can make an assert that it was called correctly using `object.method.assert_called_with(args)`:
+
+    def test_add_with_owner(mock_cardsdb):
+        cards_cli("add some task -o brian")
+        expected = cards.Card("some task", owner="brian", state="todo")
+        mock_cardsdb.add_card.assert_called_with(expected)
+
+The above will fail if the method was called with the wrong arguments, even the wrong type. There are quite a few variants of [`assert_called()`](https://docs.python.org/3/library/unittest.mock.html#unittest.mock.Mock.assert_called).
+
+**BEWARE!** - when you are using mocks you are testing IMPLEMENTATION, not BEHAVIOUR. Therefore it is best to limit mocking to those cases where you want to raise an Exception (using `mock_object.side_effect = Exception`), or if it's difficult to simulate the tested behaviour any other way, for example testing a payment processor without an actual payment being involved, or where you want to check some interim class is passing along messages correctly.
+
+There is such a thing as *Designing for Testability*, where you could for example emit some output (a `print` statement maybe) to confirm that an action was carried out, rather than returning nothing.
+
+
+
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
