@@ -738,9 +738,55 @@ Here's an example tox.ini file:
     deps =
         pytest
         faker
-    commands = pytest
+        pytest-cov
+    commands = pytest --cov=cards --cov=tests --cov-fail-under=100
+
+Optional commands:
+
+    --cov=tests: run all tests
+    --cov-fail_under=X: fail if < X% coverage
+    {posargs}: allow to send in pytest arguments (- )could be useful if you just want to test one file) separate from tox args with --, e.g.:
+        $ tox -c tox_posargs.ini -e py310 -- -k test_version --no-cov
+
+Recommended that you also have a .coveragerc file if using with tox to tell coverage "which source paths should be considered identical". Oh, OK this is because tox creates a virtual environment with a copy of the code at .tox/py3028..../site_packages...
+
+    [paths]
+    source =
+        src,
+        .tox/*site-packages
+
+Run like `tox -c tox_coverage.ini -e py308`
 
 If you run `tox` on the cmd line it will install the envlist, then the dependencies, and then will run pytest.
+
+### Tox with GitHub Actions
+You need a `.github/workflows/main.yml` file at the top of your project. See [Buiding and Testing Python](https://docs.github.com/en/actions/guides/building-and-testing-python):
+
+    name: Python package                # can be anything
+    on: [push, pull_request]            # when to run test
+    jobs:                               # note the indentation is 2 spaces
+      build:
+      runs-on: ubuntu-latest
+      strategy:
+        matrix:
+          python: ["3.8", "3.9"]
+        
+      steps:                            # steps to run
+        - uses: actions/checkout@v2     # the GitHub Actions tool that checks out our code into a temp workspace
+        - name: Setup Python
+          uses: actions/setup-python@v2 # another GitHub Actions tool to set up Python
+          with:
+            python-version: ${{ matrix.python }}
+        - name: Install Tox and any other packages
+          run: pip install tox          # install tox
+        - name: Run Tox
+          run: tox -e py                # runs tox
+
+Once the .yml file is pushed to GitHub it will be automatically run.
+
+## Testing Scripts and Applications
+A chapter for scripts that are not installable via pip.
+
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
