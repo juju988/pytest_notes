@@ -19,7 +19,7 @@ Command | Result
 `pytest --setup-show` | show progress of setting up fixtures. Note that you'll get messages like `SETUP F fixture name` where `F` means 'Function scope'. [More info on Fixture Scope here](#fixture-scope)
 `pytest --fixtures -v` | show available fixtures, the ones in `conftest.py` are at the bottom. The optional `-v` flag gives the filename containing the fixtures.
 `pytest --markers` | list the markers in use in the project, including custom ones.
-
+`pytest -n=auto` | parallelise on as many cores as possible
 
 
 ## Using a config file
@@ -206,13 +206,18 @@ There are a bunch more including `cache`, `recwarn` (for testing warning message
 ## Useful pytest plugins
 Name | Description
 ------------ | -------------
-`pytest-xdist` | splits tests across cores
+`pytest-xdist` | splits tests across cores. Use flag `--looponfail` to rerun test if any file changes.
 `pytest-cov` | shows code coverage
 `pytest-clarity` | for highlighting unexpected values in dictionaries
 `pytest-instafail` | stop on first failure
 `pytest-sugar` | errors/fails and progress bar
 `pytest-benchmark` | find slowest tests
 `pytest-socket` | disables network calls during testing
+`pytest-randomly` | randomise test order
+`pytest-selenium` | easy config of browser testing
+`pytest-factoryboy` | database model generator
+`pytest-bdd` | bdd-style tests
+`pytest-freezegun` | freeze time readings (couldn't you do this with a mock?)
 
 ## Virtual Environment
 Should be provided by Poetry, else in your project folder:
@@ -306,6 +311,32 @@ For every test that uses this fixture, the test will be called anew for each par
 'same test, different data' - use function param
 'same test, different start state' - use fixture param
 Okken (2021)
+
+### Improving parameter descriptions
+If you pass in a push of different parameters, pytest just labels the output with `param[0]`, `param[1]`, `param[2]`, etc. To get a bit more descriptive you can use a function to provide the output label. You use `ids` to pass in descriptions:
+
+    card_list = [
+        Card("foo", state="todo"),
+        Card("foo", state="in prog"),
+        Card("foo", state="done"),
+    ]
+
+
+    def card_state(card):
+        return card.state
+
+
+    @pytest.mark.parametrize("starting_card", card_list, ids=card_state)
+    def test_id_func(cards_db, starting_card):
+        ...
+        index = cards_db.add_card(starting_card)
+        cards_db.finish(index)
+        card = cards_db.get_card(index)
+        assert card.state == "done"
+
+Note `cards_list` is the abstract set of parameters, and `ids=card_state` pulls the state description from each card. Nice. You can do this with a lambda if you're a pro:
+
+    @pytest.mark.parametrize('starting_card', card_list, ids=lambda c : c.state)
 
 ### Hook parameters
 See `pytest_generate_tests` - p. 68 Okken (2021). Use if you want to change params with a CLI flag.
@@ -872,6 +903,12 @@ n | 'next' - executes current line and steps to next in current function
 r | 'return' - continue until current function returns
 c | 'continue' - untill next breakpoint
 unt line | 'until' - continues until given line number
+
+## Lambdas
+Some funky lambda examples, to try to get them into my wooden head:
+
+    @pytest.mark.parametrize('starting_card', card_list, ids=lambda c : c.state)
+    
 
 
 ## References
