@@ -6,7 +6,7 @@ Command | Result
 `pytest -x` | exit after first failed test
 `pytest -x --pdb` | auto-start debugger at first failure point
 `pytest -k pattern` | run all tests matching pattern e.g. `pytest -k equality` would run all tests which have 'equality' in their name, `pytest -k 'equality and not fail'` would run tests that have 'equality' but not 'fail' in their name. `and`, `not` and `or` are allowed keywords, and parentheses are allowed for grouping. One option could be to have 'todo' in the name of the test and use `-k todo`.
-`pytest -v` | instead of greed dots or red F, output the name of the test and PASSED/FAILED. `-vv` gives even more info.
+`pytest -v` | instead of green dots or red F, output the name of the test and PASSED/FAILED. `-vv` gives even more info.
 `pytest -ra` | output `@pytest.mark.skip` reasons at end of test report. (-r for reason, -a for all except passed)
 `pytest --lf`| runs only last failed test
 `pytest --ff` | runs from last failed test and continues
@@ -555,6 +555,7 @@ If you launch pytest in a folder that doesn't contain a config file it will look
         -v                      # make verbose
 
     testpaths = tests           # where to look for tests
+    pythonpath = src            # where to look for code to be tested (if it's in /src)
 
     markers =
         smoke: subset of tests
@@ -570,6 +571,7 @@ If you launch pytest in a folder that doesn't contain a config file it will look
         ]
 
     testpaths = "tests"
+    pythonpath = "src"
 
     markers = [
         "smoke: subset of tests",
@@ -585,6 +587,7 @@ If you launch pytest in a folder that doesn't contain a config file it will look
         -ra
 
     testpaths = tests
+    pythonpath = src
 
     markers =
         smoke: subset of tests
@@ -748,6 +751,23 @@ Optional commands:
     {posargs}: allow to send in pytest arguments (- )could be useful if you just want to test one file) separate from tox args with --, e.g.:
         $ tox -c tox_posargs.ini -e py310 -- -k test_version --no-cov
 
+Here's another example, this time setting up a `[testenv]`:
+
+    [tox]
+    envlist = py39, py310
+    skipsdist = true
+    
+    [testenv]
+    deps = pytest
+           pytest-srcpaths
+           -rrequirements.txt       # installs the deps in requirements.txt
+    commands = pytest
+    
+    [pytest]
+    addopts = -ra
+    testpaths = tests
+    pythonpath = src
+
 Recommended that you also have a .coveragerc file if using with tox to tell coverage "which source paths should be considered identical". Oh, OK this is because tox creates a virtual environment with a copy of the code at .tox/py3028..../site_packages...
 
     [paths]
@@ -786,6 +806,50 @@ Once the .yml file is pushed to GitHub it will be automatically run.
 
 ## Testing Scripts and Applications
 A chapter for scripts that are not installable via pip.
+
+### Subprocess
+For grabbing output to console:
+
+    import subprocess
+    def test_hello():
+        command = ["python", "hello.py"]
+        pipe = subprocess.run(command, stdout=subprocess.PIPE)
+        output = pipe.stdout.decode('utf8')
+        assert output == "Hello, World!\n"
+
+Auto-running tests with apps that don't need building (no setup.py file), in tox.ini:      
+
+    [tox]
+    envlist = py39, py310
+    skipsdist = true        # means tox won't try to build it
+    
+    [testenv]
+    deps = pytest
+    commands = pytest
+
+For testing from 'outside' you can always add the line:
+  
+    ... rest of code ...
+
+    if __name__ == '__main__':
+        main()
+
+Adding that doesn't affect importing it into anything else, but it means you can launch it individually with tests, e.g. if the code above was in a file called `hello.py`, you could create a file `test_hello.py`:
+
+    import hello
+    def test_main(capsys):      # capsys is a built-in pytest fixture
+        hello.main()
+        output, _ = capsys.readouterr()
+        assert output == "Hello, World!\n"
+
+Or even just test other functions directly. I guess you only need `main()` if you want to test it running.
+
+### Separating tests from code to be tested
+See #pytest.ini - you can set the test and src directories. You can get the list of search paths (to check you're looking in the right place) with:
+
+    import sys
+    for p in sys.path:
+        print(p)
 
 
 ## References
