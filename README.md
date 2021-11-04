@@ -851,6 +851,28 @@ See #pytest.ini - you can set the test and src directories. You can get the list
     for p in sys.path:
         print(p)
 
+## Python debugger (pdb)
+Useful for remote debugging if terminal only. Launch with:
+
+    pytest --pdb
+
+If any assertions fail the code will open a terminal with `(Pdb)` - once in this state use the following commands:
+
+Command | Long form + Description
+------------ | -------------
+l | 'list' - lists the 11 lines surrounding the failed assertion. Also `l first, last` lists code between `first` and `last` line numbers.
+ll | list all lines in current function
+q | quit
+w | 'where' - prints stack trace
+p expr | 'print' - evaluates expression
+pp expr | pretty print evaluated expression
+a | 'args' - prints the argument list of the expression
+s | 'step' - executes current line and goes to next
+n | 'next' - executes current line and steps to next in current function
+r | 'return' - continue until current function returns
+c | 'continue' - untill next breakpoint
+unt line | 'until' - continues until given line number
+
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
