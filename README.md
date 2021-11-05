@@ -313,7 +313,7 @@ For every test that uses this fixture, the test will be called anew for each par
 Okken (2021)
 
 ### Improving parameter descriptions
-#### With a list
+#### With a list of objects
 If you pass in a push of different parameters, pytest just labels the output with `param[0]`, `param[1]`, `param[2]`, etc. To get a bit more descriptive you can use a function to provide the output label. You use `ids` to pass in descriptions:
 
     card_list = [
@@ -322,10 +322,8 @@ If you pass in a push of different parameters, pytest just labels the output wit
         Card("foo", state="done"),
     ]
 
-
     def card_state(card):
         return card.state
-
 
     @pytest.mark.parametrize("starting_card", card_list, ids=card_state)
     def test_id_func(cards_db, starting_card):
@@ -360,6 +358,8 @@ See [Lambdas](#lambdas) for more info. What I'm not sure about is how we're gett
         c = cards_db.get_card(i)
         assert c.summary == variant
 
+Note that as long as no changes are made to the dictionary between calls, Python guarantees that the elements of keys()
+and values() will be aligned with each other.
 
 ### Hook parameters
 See `pytest_generate_tests` - p. 68 Okken (2021). Use if you want to change params with a CLI flag.
@@ -948,6 +948,15 @@ General syntax:
 
 Note there are no brackets around arguments. As long as you can do an inline expression you're golden.
 
+## Map, Filter, Reduce
+All work on there being a function followed by a list of inputs.
+
+    items = [1, 2, 3, 4]
+    squared = list(map(lambda x: x*x))                  # [1, 4, 9, 16]
+    evens = list(filter(lambda x: x%2 == 0, items))     # [2, 4]
+
+    from functools import reduce 
+    sum = reduce(lambda x, y: x * y, items)             # 24
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
