@@ -313,6 +313,7 @@ For every test that uses this fixture, the test will be called anew for each par
 Okken (2021)
 
 ### Improving parameter descriptions
+#### With a list
 If you pass in a push of different parameters, pytest just labels the output with `param[0]`, `param[1]`, `param[2]`, etc. To get a bit more descriptive you can use a function to provide the output label. You use `ids` to pass in descriptions:
 
     card_list = [
@@ -337,6 +338,28 @@ If you pass in a push of different parameters, pytest just labels the output wit
 Note `cards_list` is the abstract set of parameters, and `ids=card_state` pulls the state description from each card. Nice. You can do this with a lambda if you're a pro:
 
     @pytest.mark.parametrize('starting_card', card_list, ids=lambda c : c.state)
+
+See [Lambdas](#lambdas) for more info. What I'm not sure about is how we're getting the `c` values to pass into the lambda. Is it implied as part of the `pytest.mark.parametrize`?
+
+#### With a dictionary
+
+    text_variants = {
+        "Short": "x",
+        "With Spaces": "x y z",
+        "End In Spaces": "x    ",
+        "Mixed Case": "SuMmArY wItH MiXeD cAsE",
+        "Unicode": "¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾",
+        "Newlines": "a\nb\nc",
+        "Tabs": "a\tb\tc",
+    }
+
+
+    @pytest.mark.parametrize("variant", text_variants.values(), ids=text_variants.keys())
+    def test_summary_variants(cards_db, variant):
+        i = cards_db.add_card(Card(summary=variant))
+        c = cards_db.get_card(i)
+        assert c.summary == variant
+
 
 ### Hook parameters
 See `pytest_generate_tests` - p. 68 Okken (2021). Use if you want to change params with a CLI flag.
@@ -908,7 +931,22 @@ unt line | 'until' - continues until given line number
 Some funky lambda examples, to try to get them into my wooden head:
 
     @pytest.mark.parametrize('starting_card', card_list, ids=lambda c : c.state)
-    
+
+... but where are we picking up the value for each `c`? OK I think it's from the implementation of parametrize where we have the following:
+
+    ids: Optional[
+        Union[
+            Iterable[Union[None, str, float, int, bool]],
+            Callable[[Any], Optional[object]],
+        ]
+
+The `typing.Callable` type is an ABC that just requires the `__call__` method, so a lambda or a function would work there. OK honestly I don't really know how it works or how you would derive the fact that you can pass in a lambda. Somehow the list `card_list` is pushed into the `ids` such that each item in the list is processed by whatever `ids` points to.
+
+General syntax:
+
+    lambda arg1, arg2, arg3: expression
+
+Note there are no brackets around arguments. As long as you can do an inline expression you're golden.
 
 
 ## References
