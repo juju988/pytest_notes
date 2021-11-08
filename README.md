@@ -924,11 +924,11 @@ a | 'args' - prints the argument list of the expression
 s | 'step' - executes current line and goes to next
 n | 'next' - executes current line and steps to next in current function
 r | 'return' - continue until current function returns
-c | 'continue' - untill next breakpoint
+c | 'continue' - until next breakpoint
 unt line | 'until' - continues until given line number
 
 ## Lambdas
-Some funky lambda examples, to try to get them into my wooden head:
+Common applications of lambdas are sorting and filtering data. Some lambda examples follow, to try to get them into my wooden head:
 
     @pytest.mark.parametrize('starting_card', card_list, ids=lambda c : c.state)
 
@@ -948,6 +948,22 @@ General syntax:
 
 Note there are no brackets around arguments. As long as you can do an inline expression you're golden.
 
+### More lambda examples
+
+    items = [1, 2, 3, 4]
+    sum = reduce(lambda x, y: x + y, items)     # 10 - note x, y are taking the first 2 elements of `items` at a time
+    (lambda x: 3*x+1)(3)                        # 10
+
+The problem is that lambdas are anonymous functions so how do you get information to them? You can give them a name, e.g.:
+
+    l = lambda x: 3*x+1
+     [l(x) for x in items]  # [4, 7, 10, 13]
+
+Note that you can supply as many arguments (x, y, z ...) as you like to a lambda, even 0 arguments!
+
+    scifi_authors = ['Isaac Asimov', 'Frank Herbert', 'Leigh Brackett']
+    sorted(scifi_authors, key=lambda x: x.split()[-1])  # ['Isaac Asimov', 'Leigh Brackett', 'Frank Herbert']
+
 ## Map, Filter, Reduce
 All work on there being a function followed by a list of inputs.
 
@@ -957,6 +973,16 @@ All work on there being a function followed by a list of inputs.
 
     from functools import reduce 
     sum = reduce(lambda x, y: x * y, items)             # 24
+
+Note: `reduce` always takes 2 arguments because it's doing (((1 * 2) * 3) * 4)
+
+## List Comprehensions
+Generally in the format of project, source, filter:
+
+    usernames = [u.name for u in get_active_customers() if u.last_purchase == 'today']
+                |       |                               |
+                |       source ------------------------ filter -----------------------
+                projection
 
 ## References
 Okken, B. (2021) *Python Testing with pytest* Second Edition (pre-print), Raleigh, The Pragmatic Bookshelf
