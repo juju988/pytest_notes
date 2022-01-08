@@ -20,6 +20,7 @@ Command | Result
 `pytest --fixtures -v` | show available fixtures, the ones in `conftest.py` are at the bottom. The optional `-v` flag gives the filename containing the fixtures.
 `pytest --markers` | list the markers in use in the project, including custom ones.
 `pytest -n=auto` | parallelise on as many cores as possible
+`pytest -s` | show console output even for non-failing tests
 
 
 ## Using a config file
