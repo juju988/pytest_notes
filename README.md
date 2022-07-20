@@ -237,7 +237,7 @@ Alternately (on another system)
 ...\project_folder_path\venv\scripts\black.exe
 
 ## Checking for exceptions
-If the follow DOES NOT raise an error (TypeError in this case) then the test will fail:
+If the following DOES NOT raise an error (TypeError in this case) then the test will fail:
 
     with pytest.raises(TypeError):
         '2' % 2
