@@ -4,7 +4,7 @@
 Command | Result
 ------------ | -------------
 `pytest -x` | exit after first failed test
-`pytest -x --pdb` | auto-start debugger at first failure point
+`pytest -x --pdb` | auto-start debugger at first failure point. pdb is mainly for remote debugging. Under normal circumstances use PyCharm.
 `pytest -k pattern` | run all tests matching pattern e.g. `pytest -k equality` would run all tests which have 'equality' in their name, `pytest -k 'equality and not fail'` would run tests that have 'equality' but not 'fail' in their name. `and`, `not` and `or` are allowed keywords, and parentheses are allowed for grouping. One option could be to have 'todo' in the name of the test and use `-k todo`.
 `pytest -v` | instead of green dots or red F, output the name of the test and PASSED/FAILED. `-vv` gives even more info.
 `pytest -ra` | output `@pytest.mark.skip` reasons at end of test report. (-r for reason, -a for all except passed)
